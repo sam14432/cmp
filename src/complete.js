@@ -7,6 +7,9 @@ import 'core-js/fn/array/from';
 import log from './lib/log';
 import { init } from './lib/init';
 import { CMP_GLOBAL_NAME } from "./lib/cmp";
+import Relevant from './lib/relevant';
+
+Relevant.init();
 
 function handleConsentResult(cmp, {vendorListVersion: listVersion} = {}, {created, vendorListVersion} = {}) {
 	if (!created) {
@@ -103,3 +106,5 @@ listen('message', event => {
 
 // Initialize CMP and then check if we need to ask for consent
 init(configUpdates).then(() => checkConsent(window.__cmp));
+
+Relevant.onCmpCreated(cmp);

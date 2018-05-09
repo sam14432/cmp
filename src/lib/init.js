@@ -7,6 +7,7 @@ import { fetchVendorList, fetchPurposeList } from './vendor';
 import log from './log';
 import pack from '../../package.json';
 import config from './config';
+import Relevant from './relevant';
 
 const CMP_VERSION = 1;
 const CMP_ID = 1;
@@ -18,7 +19,7 @@ export function init(configUpdates) {
 
 	// Fetch the current vendor consent before initializing
 	return readVendorConsentCookie()
-		.then(vendorConsentData => {
+		.then(Relevant.waitBody).then(vendorConsentData => {
 
 			// Initialize the store with all of our consent data
 			const store = new Store({
@@ -53,7 +54,7 @@ export function init(configUpdates) {
 
 			// Request lists
 			return Promise.all([
-				fetchVendorList().then(store.updateVendorList),
+				fetchVendorList().then(Relevant.mergeWithCustomVendors).then(store.updateVendorList),
 				fetchPurposeList().then(store.updateCustomPurposeList)
 			]).then(() => {
 				cmp.cmpReady = true;

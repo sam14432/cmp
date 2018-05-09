@@ -153,14 +153,14 @@ const commonConfig = {
 
 	devServer: {
 		port: process.env.PORT || 8080,
-		host: 'localhost',
+		host: '0.0.0.0',
 		publicPath: '/',
 		contentBase: './src',
 		historyApiFallback: true,
 		disableHostCheck: true,
 		open: false,
 		openPage: 'docs/',
-		https: false
+		https: true,
 	}
 };
 
