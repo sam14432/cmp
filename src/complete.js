@@ -106,6 +106,4 @@ listen('message', event => {
 }, false);
 
 // Initialize CMP and then check if we need to ask for consent
-init(configUpdates).then(() => checkConsent(window.__cmp));
-
-Relevant.onCmpCreated(cmp);
+init(configUpdates).then(Relevant.onCmpCreated).then(() => checkConsent(window.__cmp));
