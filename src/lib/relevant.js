@@ -1,4 +1,5 @@
 import { encodeVendorConsentData, decodeVendorConsentData } from "./cookie/cookie";
+import { fetchGlobalVendorList, fetchPubVendorList } from "./vendor";
 
 const DEFAULT_CONFIG = {
 	cmpConfig: {
@@ -8,14 +9,17 @@ const DEFAULT_CONFIG = {
 		//"globalConsentLocation": "//samuelapi.relevant-digital.com:5000/docs/portal.html",
 		"storeConsentGlobally": false,
 		"storePublisherData": false,
-		"logging": "debug",
+		"logging": "warn",
 		"localization": {},
 		"forceLocale": null,
 		"gdprApplies": true,
 	},
+	pubVendorList: undefined,
+	manageButtonStyle: 'default',
+	useBuiltInVendorList: true,
 };
 
-let consent, waiters = [], config;
+let consent, waiters = [];
 
 const waitConsent = (fn) => consent ? fn() : waiters.push(fn);
 
@@ -33,6 +37,15 @@ const inject = (obj, fnName, fn) => {
 
 class Relevant
 {
+
+	static mergeLocalization(locMap) {
+		const special = Relevant.config.specialLocalization || {};
+		for (let lang in special) {
+			Object.assign((locMap[lang] = locMap[lang] || {}), special[lang]);
+		}
+		return locMap;
+	}
+
 	static mergeWithCustomVendors(globalVendorList)	{
 		const mergedWith = (vendorList, other) => {
 			return Object.assign({}, vendorList, {
@@ -40,7 +53,22 @@ class Relevant
 				vendorListVersion: (vendorList.vendorListVersion || 0) + (other.vendorListVersion || 0),
 			});
 		};
-		return mergedWith(mergedWith(globalVendorList, Relevant.VENDOR_LIST), config.customVendors || {});
+		return mergedWith(mergedWith(globalVendorList, Relevant.VENDOR_LIST), Relevant.config.customVendors || {});
+	}
+
+	static fetchGlobalVendorList() {
+		const builtInList = window.__globalVendorList
+		if (Relevant.config.useBuiltInVendorList && builtInList) {
+			return Promise.resolve(Relevant.mergeWithCustomVendors(builtInList));
+		}
+		return fetchGlobalVendorList().then(Relevant.mergeWithCustomVendors);
+	}
+
+	static fetchPubVendorList() {
+		if ('pubVendorList' in Relevant.config) {
+			return Promise.resolve(Relevant.config.pubVendorList);
+		}
+		return fetchPubVendorList();
 	}
 
 	static waitBody(param) {
@@ -78,8 +106,9 @@ class Relevant
 
 	static init() {
 		const localConfig = window.RELEVANT_CMP_CONFIG || {};
-		config = Object.assign({}, DEFAULT_CONFIG, localConfig);
+		const config = Object.assign({}, DEFAULT_CONFIG, localConfig);
 		config.cmpConfig = Object.assign({}, DEFAULT_CONFIG.cmpConfig, localConfig.cmpConfig || {});
+		Relevant.config = config;
 
 		window.__cmp = { config: config.cmpConfig };
 
@@ -99,8 +128,6 @@ class Relevant
 			obj.selectedVendorIds = new Set(validIds);
 		}
 		const res = encodeVendorConsentData(obj);
-		const hej = decodeVendorConsentData(res);
-		console.info(hej);
 		return res;
 	}
 
@@ -172,7 +199,6 @@ class Relevant
 
 		window.__cmp = relevantCmp;
 		window.__cmp('getConsentData', null, (result) => {
-			//document.write = document.writeln = () => {debugger;};
 			consent = result;
 			waiters.forEach(fn => fn());
 			waiters = null;

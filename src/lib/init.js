@@ -21,7 +21,7 @@ export function init(configUpdates) {
 	// Fetch the current vendor consent before initializing
 	return Promise.all([
 		readVendorConsentCookie(),
-		fetchPubVendorList()
+		Relevant.fetchPubVendorList(),
 	])
 		.then(Relevant.waitBody).then(([vendorConsentData, pubVendorsList]) => {
 			const {vendors} = pubVendorsList || {};
@@ -67,7 +67,7 @@ export function init(configUpdates) {
 
 			// Request lists
 			return Promise.all([
-				fetchGlobalVendorList().then(Relevant.mergeWithCustomVendors).then(store.updateVendorList),
+				Relevant.fetchGlobalVendorList().then(store.updateVendorList),
 				fetchPurposeList().then(store.updateCustomPurposeList)
 			]).then(() => {
 				cmp.cmpReady = true;

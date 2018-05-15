@@ -3,7 +3,7 @@ import style from './popup.less';
 import Intro from './intro/intro';
 import Details from './details/details';
 import Panel from '../panel/panel';
-
+import Relevant from '../../lib/relevant';
 
 const SECTION_INTRO = 0;
 const SECTION_DETAILS = 1;

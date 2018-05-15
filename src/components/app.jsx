@@ -3,6 +3,7 @@ import style from './app.less';
 
 import Popup from './popup/popup';
 import Footer from './footer/footer';
+import Relevant from '../lib/relevant';
 
 export default class App extends Component {
 	state = {
@@ -37,7 +38,7 @@ export default class App extends Component {
 				<Popup store={store}
 					   onSave={this.onSave}
 				/>
-				<Footer store={store} />
+				{!Relevant.config.hideBottomBar && <Footer store={store} />}
 			</div>
 		);
 	}

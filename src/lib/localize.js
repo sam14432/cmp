@@ -1,5 +1,6 @@
 import translations from './translations';
 import config from './config';
+import Relevant from './relevant';
 
 export function findLocale() {
 	const locale = config.forceLocale ||
@@ -16,7 +17,7 @@ export function findLocale() {
 
 export class Localize {
 	constructor(localizedData = {...translations, ...config.localization}) {
-		const localizedMap = this.processLocalized(localizedData);
+		const localizedMap = Relevant.mergeLocalization(this.processLocalized(localizedData));
 		const currentLocal = findLocale();
 		const [language] = currentLocal.split('-');
 		this.localizedValues = {
