@@ -73,8 +73,8 @@ RELEVANT_CMP_CONFIG = {
 };
 </script>
 
-<!-- Example URL - DON'T USE as we currently have no way to update this file -->
-<script src="//akamai.smartadserver.com/diff/1976/7879268/cmp.complete.vendors.bundle.js"></script>
+<!-- Example URL - use latest version of script -->
+<script src="//rawgit.com/sam14432/cmp/master/dist/cmp.complete.vendors.bundle.js"></script>
 
 <!--
 	Example on how to optionally record consent per user somehow.
