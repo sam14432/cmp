@@ -23,7 +23,7 @@ export function init(configUpdates) {
 		readVendorConsentCookie(),
 		Relevant.fetchPubVendorList(),
 	])
-		.then(Relevant.waitBody).then(([vendorConsentData, pubVendorsList]) => {
+		.then(([vendorConsentData, pubVendorsList]) => {
 			const {vendors} = pubVendorsList || {};
 
 			// Check config for allowedVendorIds then the pubVendorList
@@ -58,8 +58,7 @@ export function init(configUpdates) {
 
 			// Render the UI
 			const App = require('../components/app').default;
-			render(<App store={store} notify={cmp.notify} />, document.body);
-
+			Relevant.waitBody().then(() => render(<App store={store} notify={cmp.notify} />, document.body))
 
 			// Execute any previously queued command
 			cmp.commandQueue = commandQueue;

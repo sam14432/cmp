@@ -1,5 +1,4 @@
-import globalVendorList from './lib/globalVendorList';
+import './vendorLoader';
 import Relevant from './lib/relevant';
-window.__globalVendorList = globalVendorList;
 import './complete.js';
 

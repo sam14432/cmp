@@ -32,13 +32,13 @@ export default class App extends Component {
 		const {
 			store,
 		} = state;
-
+		const useFooter = !Relevant.config.hideBottomBar;
 		return (
 			<div class={style.gdpr}>
 				<Popup store={store}
 					   onSave={this.onSave}
 				/>
-				{!Relevant.config.hideBottomBar && <Footer store={store} />}
+				{useFooter && <Footer store={store} />}
 			</div>
 		);
 	}

@@ -1,5 +1,7 @@
 import { encodeVendorConsentData, decodeVendorConsentData } from "./cookie/cookie";
 import { fetchGlobalVendorList, fetchPubVendorList } from "./vendor";
+import Promise from 'promise-polyfill';
+import log from './log';
 
 const DEFAULT_CONFIG = {
 	cmpConfig: {
@@ -27,7 +29,7 @@ const inject = (obj, fnName, fn) => {
 	let realCall;
 	Object.defineProperty(obj, fnName, {
 		get: () => ((...args) => {
-			waitConsent(() => fn(realCall, ...args));
+			waitConsent((wasWaiting) => fn(realCall, wasWaiting,...args));
 		}),
 		set: (orgFn) => {
 			realCall = orgFn;
@@ -37,7 +39,6 @@ const inject = (obj, fnName, fn) => {
 
 class Relevant
 {
-
 	static mergeLocalization(locMap) {
 		const special = Relevant.config.specialLocalization || {};
 		for (let lang in special) {
@@ -87,19 +88,22 @@ class Relevant
 	static injectSmartTags()
 	{
 		const sas = (window.sas = window.sas || {});
-		inject(sas, 'call', (orgFn, type, obj, ...rest) => {
+		inject(sas, 'call', (orgFn, wasWaiting, type, obj, ...rest) => {
 			obj = Object.assign({}, obj, {
 				gdpr_consent: consent,
 			});
 			orgFn.call(sas, type, obj, ...rest);
 		});
-		inject(sas, 'setup', (orgFn, obj, ...rest) => {
-			obj = Object.assign({}, obj || {}, {
-				async: true,
-			});
+		inject(sas, 'setup', (orgFn, wasWaiting, obj, ...rest) => {
+			if (wasWaiting) {
+				obj = Object.assign({}, obj || {}, {
+					async: true,
+				});
+			}
+			log.debug(`sas.setup(async = ${!!obj.async})`);
 			orgFn.call(sas, obj, ...rest);
 		});
-		inject(sas, 'render', (orgFn, ...rest) => {
+		inject(sas, 'render', (orgFn, wasWaiting, ...rest) => {
 			orgFn.call(sas, ...rest);
 		});
 	}
@@ -111,6 +115,10 @@ class Relevant
 		Relevant.config = config;
 
 		window.__cmp = { config: config.cmpConfig };
+
+		Promise._immediateFn = (fn) => {
+			fn();
+		};
 
 		if (config.injectInSmartTags) {
 			Relevant.injectSmartTags();
@@ -200,7 +208,7 @@ class Relevant
 		window.__cmp = relevantCmp;
 		window.__cmp('getConsentData', null, (result) => {
 			consent = result;
-			waiters.forEach(fn => fn());
+			waiters.forEach(fn => fn(true));
 			waiters = null;
 		});
 	}

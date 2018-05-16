@@ -100,7 +100,7 @@ RELEVANT_CMP_CONFIG = {
 
 ### Extentions to the IAB framework to handle custom vendors
 
-We have the option to add "custom vendors" both in the CMP fork ourselves in two ways
+We have the option to add "custom vendors" both in the CMP fork ourselves and by the publisher on the site. This is done in two ways:
 
 - Adding vendors to **Relevant.VENDOR_LIST** here https://github.com/sam14432/cmp/blob/master/src/lib/relevant.js (starting from id: 5000). This should be done by Relevant.
 - Adding vendors using the **customVendors** config option as shown in the example above (starting from id 6000). This should be done by the Publisher.
