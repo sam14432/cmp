@@ -133,5 +133,67 @@ export default {
 			message: 'Du kannst deine Datenschutz-Einstellungen bearbeiten',
 			consentLink: 'hier'
 		}
-	}
+	},
+	fi: {
+		intro: {
+			title: 'Kiitos vierailustasi sivullamme',
+			description: 'Sivustomme käyttää evästeitä palvelun toimittamiseksi, sivustoliikenteen mittaamiseen sekä kohdennettuun mainontaan. Painamalla hyväksy evästeet autat meitä ylläpitämään palveluamme.',
+			acceptAll: 'Hyväksy kaikki evästeet',
+			rejectAll: '',
+			showPurposes: 'Asetukset'
+		},
+		details: {
+			title: 'Tietosuoja-asetukset',
+			back: 'Takaisin',
+			save: 'Tallenna'
+		},
+		purposes: {
+			active: 'Päällä',
+			inactive: 'Pois',
+			showVendors: 'Näytä yhteistyökumppanit',
+			cookies: {
+				menu: '',
+				title: '',
+				description: ''
+			},
+			purpose1: {
+				menu: 'Sivuston kävijäliikenteen mittaaminen',
+				title: 'Sivuston kävijäliikenteen mittaaminen',
+			},
+			purpose2: {
+				menu: 'Palvelun personoiminen',
+				title: 'Palvelun personoiminen',
+			},
+			purpose3: {
+				menu: 'Kohdennettu mainonta ja mainonnan mittaaminen',
+				title: 'Kohdennettu mainonta ja mainonnan mittaaminen',
+			},
+			purpose4: {
+				menu: 'Tietojen tallentaminen tai käyttö käyttäjän laitteella',
+				title: 'Tietojen tallentaminen tai käyttö käyttäjän laitteella',
+			},
+			purpose5: {
+				menu: 'Mittaus',
+				title: 'Mittaus',
+			},
+			customPurpose1: {
+				menu: '',
+				title: '',
+				description: ''
+			}
+		},
+		vendors: {
+			title: 'Yhteistyökumppanimme',
+			rejectAll: '',
+			acceptAll: 'Tallenna',
+			company: 'Yritys',
+			offOn: 'Hyväksy',
+			description: 'Auta meitä tarjoamaan mielenkiintoista sisältöä sivuillamme hyväksymällä evästeiden käytön. Yhteistyökumppanimme asettavat evästeitä ja keräävät tietoja kävijän selaimesta, jotta voimme paremmin ymmärtää yleisöämme koskettavat sisällöt ja näyttää kiinnostavampia mainoksia.',
+			moreChoices: 'Lisävalinnat'
+		},
+		footer: {
+			message: 'Muistutuksella voit ohjata käyttäjän yksityisyysasetuksia',
+			consentLink: 'täällä'
+		}
+	},
 };
