@@ -71,6 +71,7 @@ export function init(configUpdates) {
 			]).then(() => {
 				cmp.cmpReady = true;
 				cmp.notify('cmpReady');
+				return cmp;
 			}).catch(err => {
 				log.error('Failed to load lists. CMP not ready', err);
 			});

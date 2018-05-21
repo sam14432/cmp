@@ -21,7 +21,7 @@ const DEFAULT_CONFIG = {
 	useBuiltInVendorList: true,
 };
 
-let consent, waiters = [];
+let consent, allVendorConsents, waiters = [], onConsentListeners = {};
 
 const waitConsent = (fn) => consent ? fn() : waiters.push(fn);
 
@@ -54,7 +54,14 @@ class Relevant
 				vendorListVersion: (vendorList.vendorListVersion || 0) + (other.vendorListVersion || 0),
 			});
 		};
-		return mergedWith(mergedWith(globalVendorList, Relevant.VENDOR_LIST), Relevant.config.customVendors || {});
+		const fullList = mergedWith(mergedWith(globalVendorList, Relevant.VENDOR_LIST), Relevant.config.customVendors || {});
+		(fullList.vendors || []).forEach((vendor) => {
+			if (vendor.onConsent) {
+				onConsentListeners[vendor.id] = vendor.onConsent;
+				delete vendor.onConsent;
+			}
+		});
+		return fullList;
 	}
 
 	static fetchGlobalVendorList() {
@@ -174,8 +181,43 @@ class Relevant
 		return res;
 	}
 
-	static onCmpCreated()
+	static transferConsentFromEnsighten(mapping) {
+		const MAX_PURPOSE_ID = 10;
+		const { store } = Relevant.cmpObj;
+		if (!mapping) {
+			return;
+		}
+		const enConsents = {};
+		document.cookie.split(';').forEach((cookieStr) => {
+			const parts = cookieStr.split('=');
+			if (parts[0] && ~parts[0].indexOf('__ENSIGHTEN_PRIVACY_') && parts[1]) {
+				const key = (/_ENSIGHTEN_PRIVACY_(.*)/.exec(parts[0]) || [])[1];
+				if (key) {
+					enConsents[key] = !!parseInt(parts[1]);
+				}
+			}
+		});
+		const purposeConsents = {};
+		for (var enKey in mapping) {
+			(mapping[enKey].purposes || []).forEach((purposeId) => {
+				if (enConsents[enKey]) {
+					purposeConsents[purposeId] = true;
+				}
+			});
+		}
+		for (var purposeId = 1; purposeId <= MAX_PURPOSE_ID; purposeId++) {
+			store.selectPurpose(purposeId, !!purposeConsents[purposeId]);
+		}
+		store.vendorList.vendors.forEach((vendor) => {
+			const hasConsent = !(vendor.purposeIds || []).find(pId => !purposeConsents[pId]);
+			store.selectVendor(vendor.id, hasConsent);
+		});
+		store.persist();
+	}
+
+	static onCmpCreated(cmpObj)
 	{
+		Relevant.cmpObj = cmpObj;
 		const orgFn = window.__cmp;
 
 		const commands = {
@@ -191,6 +233,13 @@ class Relevant
 				callback(Relevant.convertVendorConsentsResult(result || {}), success);
 			}),
 			relevant_getVendorConsents: (parameter, callback) => orgFn('getVendorConsents', parameter, callback),
+			showConsentTool: (parameter, callback) => {
+				if (Relevant.config.hideUi && !parameter) {
+					log.debug(`Not showing UI due to config`);
+				} else {
+					orgFn('showConsentTool', parameter, callback);
+				}
+			},
 		};
 
 		const relevantCmp = (command, parameter, callback) =>
@@ -206,12 +255,24 @@ class Relevant
 		};
 		relevantCmp.isRelevantCmp = true;
 
+		Relevant.transferConsentFromEnsighten(Relevant.config.ensightenMapping);
 		window.__cmp = relevantCmp;
-		window.__cmp('getConsentData', null, (result) => {
-			consent = result;
-			waiters.forEach(fn => fn(true));
-			waiters = null;
+		relevantCmp('getConsentData', null, (consentRes) => {
+			relevantCmp('relevant_getVendorConsents', null, (vendorConsents) => {
+				allVendorConsents = vendorConsents;
+				consent = consentRes;
+				Relevant.notifyConsentListeners();
+				waiters.forEach(fn => fn(true));
+				waiters = null;
+			});
 		});
+	}
+
+	static notifyConsentListeners() {
+		for (const [vendorId, cb] of Object.entries(onConsentListeners)) {
+			const hasConsent = allVendorConsents.vendorConsents[vendorId];
+			cb(hasConsent);
+		}
 	}
 }
 
@@ -226,7 +287,14 @@ Relevant.VENDOR_LIST = {
 			policyUrl: 'https://policies.google.com/privacy',
 			purposeIds: [ 1 ],
 			legIntPurposeIds: [ 2, 3, 4, 5 ],
-			featureIds: [ 1, 2 ]
+			featureIds: [ 1, 2 ],
+			onConsent: (hasConsent) => {
+				const gtag = (window.googletag = window.googletag || {});
+				(gtag.cmd = gtag.cmd || []).push(() => {
+					gtag.pubads().setRequestNonPersonalizedAds(hasConsent ? 0 : 1);
+				});
+
+			},
 		},
 		{
 			id: Relevant.CUSTOM_VENDOR_START_ID + 1,
