@@ -3,6 +3,10 @@ import { fetchGlobalVendorList, fetchPubVendorList } from "./vendor";
 import Promise from 'promise-polyfill';
 import log from './log';
 
+const MAX_PURPOSE_ID = 5;
+
+const START_TIME = new Date();
+
 const DEFAULT_CONFIG = {
 	cmpConfig: {
 		"customPurposeListLocation": "./purposes.json",
@@ -19,9 +23,13 @@ const DEFAULT_CONFIG = {
 	pubVendorList: undefined,
 	manageButtonStyle: 'default',
 	useBuiltInVendorList: true,
+	legitimateInterest: 'hard',
+	injectInSmartTags: false,
+	initDfpPersonalization: false,
+	deferDfpLoading: false,
 };
 
-let consent, waiters = [];
+let consent, allVendorConsents, waiters = [], onConsentListeners;
 
 const waitConsent = (fn) => consent ? fn() : waiters.push(fn);
 
@@ -36,6 +44,13 @@ const inject = (obj, fnName, fn) => {
 		},
 	});
 };
+
+const googleQueue = (fn) => {
+	const gtag = (window.googletag = window.googletag || {});
+	(gtag.cmd = gtag.cmd || []).push(() => {
+		fn(gtag);
+	});
+}
 
 class Relevant
 {
@@ -54,7 +69,16 @@ class Relevant
 				vendorListVersion: (vendorList.vendorListVersion || 0) + (other.vendorListVersion || 0),
 			});
 		};
-		return mergedWith(mergedWith(globalVendorList, Relevant.VENDOR_LIST), Relevant.config.customVendors || {});
+		const fullList = mergedWith(mergedWith(globalVendorList, Relevant.VENDOR_LIST), Relevant.config.customVendors || {});
+		(fullList.vendors || []).forEach((vendor) => {
+			if (vendor.onConsent) {
+				if(!onConsentListeners[vendor.id]) {
+					onConsentListeners[vendor.id] = vendor.onConsent;
+				}
+				delete vendor.onConsent;
+			}
+		});
+		return fullList;
 	}
 
 	static fetchGlobalVendorList() {
@@ -85,8 +109,16 @@ class Relevant
 		});
 	}
 
-	static injectSmartTags()
-	{
+	static injectDfpTags() {
+		googleQueue((gtag) => {
+			gtag.pubads().disableInitialLoad();
+		});
+	}
+
+	static injectSmartTags() {
+		if (window.sas) {
+			log.error('CMP must be loaded before smart.js and not using async');
+		}
 		const sas = (window.sas = window.sas || {});
 		inject(sas, 'call', (orgFn, wasWaiting, type, obj, ...rest) => {
 			obj = Object.assign({}, obj, {
@@ -113,6 +145,7 @@ class Relevant
 		const config = Object.assign({}, DEFAULT_CONFIG, localConfig);
 		config.cmpConfig = Object.assign({}, DEFAULT_CONFIG.cmpConfig, localConfig.cmpConfig || {});
 		Relevant.config = config;
+		onConsentListeners = config.onConsentListeners || {};
 
 		window.__cmp = { config: config.cmpConfig };
 
@@ -122,6 +155,9 @@ class Relevant
 
 		if (config.injectInSmartTags) {
 			Relevant.injectSmartTags();
+		}
+		if (config.deferDfpLoading) {
+			Relevant.injectDfpTags();
 		}
 	}
 
@@ -174,8 +210,46 @@ class Relevant
 		return res;
 	}
 
-	static onCmpCreated()
+	/** Map consent from Ensighten cookies and save it */
+	static transferConsentFromEnsighten(mapping) {
+		const { store } = Relevant.cmpObj;
+		if (!mapping) {
+			return;
+		}
+		const enConsents = {};
+		document.cookie.split(';').forEach((cookieStr) => {
+			const parts = cookieStr.split('=');
+			if (parts[0] && ~parts[0].indexOf('_ENSIGHTEN_PRIVACY_') && parts[1]) {
+				const key = (/_ENSIGHTEN_PRIVACY_(.*)/.exec(parts[0]) || [])[1];
+				if (key) {
+					enConsents[key] = !!parseInt(parts[1]);
+				}
+			}
+		});
+		const purposeConsents = {};
+		for (const [enKey, settings] of Object.entries(mapping)) {
+			(settings.purposes || []).forEach((purposeId) => {
+				if (enConsents[enKey]) {
+					purposeConsents[purposeId] = true;
+				}
+			});
+		}
+		for (let purposeId = 1; purposeId <= MAX_PURPOSE_ID; purposeId++) {
+			store.selectPurpose(purposeId, !!purposeConsents[purposeId]);
+		}
+		store.vendorList.vendors.forEach((vendor) => {
+			let hasConsent = !(vendor.purposeIds || []).find(pId => !purposeConsents[pId]);
+			if (hasConsent && Relevant.config.legitimateInterest === 'hard' && (vendor.legIntPurposeIds || []).find(pId => !purposeConsents[pId])) {
+				hasConsent = false;
+			}
+			store.selectVendor(vendor.id, hasConsent);
+		});
+		store.persist();
+	}
+
+	static onCmpCreated(cmpObj)
 	{
+		Relevant.cmpObj = cmpObj;
 		const orgFn = window.__cmp;
 
 		const commands = {
@@ -191,6 +265,13 @@ class Relevant
 				callback(Relevant.convertVendorConsentsResult(result || {}), success);
 			}),
 			relevant_getVendorConsents: (parameter, callback) => orgFn('getVendorConsents', parameter, callback),
+			showConsentTool: (parameter, callback) => {
+				if (Relevant.config.hideUi && !parameter) {
+					log.debug(`Not showing UI due to config`);
+				} else {
+					orgFn('showConsentTool', parameter, callback);
+				}
+			},
 		};
 
 		const relevantCmp = (command, parameter, callback) =>
@@ -206,12 +287,29 @@ class Relevant
 		};
 		relevantCmp.isRelevantCmp = true;
 
+		Relevant.transferConsentFromEnsighten(Relevant.config.ensightenMapping);
 		window.__cmp = relevantCmp;
-		window.__cmp('getConsentData', null, (result) => {
-			consent = result;
-			waiters.forEach(fn => fn(true));
-			waiters = null;
+		relevantCmp('getConsentData', null, (consentRes) => {
+			relevantCmp('relevant_getVendorConsents', null, (vendorConsents) => {
+				allVendorConsents = vendorConsents;
+				consent = consentRes;
+				Relevant.notifyConsentListeners();
+				log.debug(`Relevant loading completed in ${Date.now() - START_TIME} ms`);
+				waiters.forEach(fn => fn(true));
+				waiters = null;
+			});
 		});
+	}
+
+	static notifyConsentListeners() {
+		for (const [vendorId, cb] of Object.entries(onConsentListeners)) {
+			const hasConsent = allVendorConsents.vendorConsents[vendorId];
+			try {
+				cb(hasConsent);
+			} catch (e) {
+				log.error(e.message);
+			}
+		}
 	}
 }
 
@@ -226,7 +324,18 @@ Relevant.VENDOR_LIST = {
 			policyUrl: 'https://policies.google.com/privacy',
 			purposeIds: [ 1 ],
 			legIntPurposeIds: [ 2, 3, 4, 5 ],
-			featureIds: [ 1, 2 ]
+			featureIds: [ 1, 2 ],
+			onConsent: (hasConsent) => {
+				googleQueue((gtag) => {
+					const pubads = gtag.pubads();
+					if (Relevant.config.initDfpPersonalization) {
+						pubads.setRequestNonPersonalizedAds(hasConsent ? 0 : 1);
+					}
+					if (Relevant.config.deferDfpLoading) {
+						pubads.refresh();
+					}
+				});
+			},
 		},
 		{
 			id: Relevant.CUSTOM_VENDOR_START_ID + 1,

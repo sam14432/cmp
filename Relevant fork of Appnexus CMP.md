@@ -92,13 +92,90 @@ RELEVANT_CMP_CONFIG = {
 
 ```
 
+### Configuration with Ensighten Privacy
 
+If you use Ensighten Privacy you probably don't want to expose an additional UI. Instead it's possible to map the selected consent categories you've created in Ensighten to the 5 IAB *purposes* defined [here](https://github.com/InteractiveAdvertisingBureau/GDPR-Transparency-and-Consent-Framework/blob/master/Consent%20string%20and%20vendor%20list%20formats%20v1.1%20Final.md). This mapping is also used to filter out the IAB vendor IDs that consent will be given to.
+
+> Ensighten will enforce the consent on the page, blocking all request to vendors lacking that from the user. That might lead to the conclusion that all IAB vendors/consent could safely be selected as all requests to the non-approved vendors will anyway be blocked on the page. However, the IAB consent string will also be used by servers (for example between a SSP there is consent for to a DSP lacking consent). That is the reason this mapping is used.
+
+An example tag, if you have specified four consent categories "Advertising", "Analytics", etc - would look like below:
+
+```html
+<!-- Place in <head> BEFORE including any adserver .js -->
+<script>
+RELEVANT_CMP_CONFIG = {
+    
+    /**
+    * Map Ensighten category names (keys) to IAB purpose IDs.
+    * Overlaps are allowed (the same IAB purpose ID can occur > 1 time)
+    */
+	ensightenMapping: {
+		"Advertising": {
+			purposes: [3],
+		},
+		"Analytics": {
+			purposes: [5],
+		},
+		"Performance and Functionality": {
+			purposes: [1, 2, 4],
+		},
+		"Social Media": {
+			purposes: [],
+		},
+	},
+    
+    /**
+    * If legitimateInterest is 'hard', then there must be consent for all
+    * purposes listed in the list of "legitimate interest" purposes for a vendor. 
+    */
+	legitimateInterest: 'hard',
+	
+    /**
+    * Hide the UI, you want do to that.
+    * The UI can be shown by "force" via a javascript call: __cmp('showConsentTool', true)
+    */
+    hideUi: true,
+};
+</script>
+<script src="//rawgit.com/sam14432/cmp/master/dist/cmp.complete.vendors.bundle.js"></script>
+```
+
+> **First time page load (when the Ensighten UI is shown)**
+>
+> Currently this will result in no IAB consent at all. This is because the code will read the cookies created by Ensighten upon loading the page, *before* the user have the change to press the "ok" button.
+
+### Set Google DFP ads personalization based upon user consent
+
+At the time of writing this Google is not part of IAB's framework but is added as custom vendor with id 5000 (see an explanation of "custom vendors" later in this document). There is basic functionality to set ads personalization and defer loading of ads as described [here](https://support.google.com/dfp_premium/answer/7678538).
+
+To enable/disable ads personalization based upon user consent you can use settings like below:
+
+```js
+RELEVANT_CMP_CONFIG = {
+    ...    
+    /**
+    * Will call googletag.pubads().setRequestNonPersonalizedAds([0 or 1]),
+    * after loading consent settings
+    */
+    initDfpPersonalization: true,
+	
+    /**
+    * If true, will call disableInitialLoad() on initialization
+    * and refresh() after loading consent.
+    * WARNING: will prevent ads to be shown if enableSyncRendering() is used 
+    * and they are requested before consent has been loaded. See:
+    * https://support.google.com/dfp_premium/answer/7678538
+    */
+    deferDfpLoading: false,
+    ...
+}; 
+```
 
 ### Global consent
 
 *Don't* try to edit the config to enable it - currently it doesn't work as it should.
 
-### Extentions to the IAB framework to handle custom vendors
+### Extensions to the IAB framework to handle custom vendors
 
 We have the option to add "custom vendors" both in the CMP fork ourselves and by the publisher on the site. This is done in two ways:
 
