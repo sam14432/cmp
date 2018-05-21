@@ -204,6 +204,7 @@ class Relevant
 					source.postMessage({__cmpReturn: {callId, command, returnValue}}, origin));
 			}
 		};
+		relevantCmp.isRelevantCmp = true;
 
 		window.__cmp = relevantCmp;
 		window.__cmp('getConsentData', null, (result) => {
