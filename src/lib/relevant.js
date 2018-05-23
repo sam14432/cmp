@@ -390,7 +390,7 @@ class Relevant
 Relevant.CUSTOM_VENDOR_START_ID = 5000;
 
 Relevant.VENDOR_LIST = {
-	vendorListVersion: 1,
+	vendorListVersion: 2,
 	vendors: [
 		{
 			id: Relevant.CUSTOM_VENDOR_START_ID + 0,
