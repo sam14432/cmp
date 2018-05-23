@@ -144,6 +144,32 @@ RELEVANT_CMP_CONFIG = {
 >
 > Currently this will result in no IAB consent at all. This is because the code will read the cookies created by Ensighten upon loading the page, *before* the user have the change to press the "ok" button.
 
+### Configuration with Cxense
+
+Cxense is added as custom vendor 5002. It is possible to automate [Cxense's consent settings](https://wiki.cxense.com/display/cust/GDPR+Compliance+with+Cxense) by using **syncCxenseConsent: true** in the configuration. By enabling that setting "page view events", etc - are delayed until consent has been given to Cxense for the corresponding purposes. Below is an example tag showing how this can be done.
+
+```html
+<!-- Place in <head> BEFORE including any adserver .js -->
+<script>
+RELEVANT_CMP_CONFIG = {
+	/** This will set Cxense's consent setting from the settings in Appnexus CMP */
+    syncCxenseConsent: true,
+};
+</script>
+<script src="//rawgit.com/sam14432/cmp/master/dist/cmp.complete.vendors.bundle.js"></script>
+```
+
+As Cxense and IAB are defining the purposes for the consents somewhat differently, the following mapping is used.
+
+| Cxense Purpose | IAB Purpose IDs |
+| -------------- | --------------- |
+| pv             | 1, 2, 5         |
+| recs           | 4               |
+| segments       | 1, 2, 5         |
+| ad             | 3               |
+
+This means for example that page view events "pv" is only sent if the user have given consent to IAB purposes 1, 2, *and* 5 in the CMP.
+
 ### Set Google DFP ads personalization based upon user consent
 
 At the time of writing this Google is not part of IAB's framework but is added as custom vendor with id 5000 (see an explanation of "custom vendors" later in this document). There is basic functionality to set ads personalization and defer loading of ads as described [here](https://support.google.com/dfp_premium/answer/7678538).

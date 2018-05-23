@@ -5,6 +5,15 @@ import log from './log';
 
 const MAX_PURPOSE_ID = 5;
 
+let CXENSE_VENDOR_ID;
+
+const CXENSE_PURPOSE_MAPPING = {
+	pv: [1,2,5],
+	recs: [4],
+	segments: [1,2,5],
+	ad: [3],
+};
+
 const START_TIME = new Date();
 
 const DEFAULT_CONFIG = {
@@ -25,11 +34,27 @@ const DEFAULT_CONFIG = {
 	useBuiltInVendorList: true,
 	legitimateInterest: 'hard',
 	injectInSmartTags: false,
+	syncCxenseConsent: false,
 	initDfpPersonalization: false,
 	deferDfpLoading: false,
 };
 
-let consent, allVendorConsents, waiters = [], onConsentListeners;
+let consent, allVendorConsents, waiters = [];
+
+const vendorListeners = {
+	onConsent: {},
+	onSubmit: {},
+};
+
+const consentStringEq = (str1, str2) => {
+	const now = new Date();
+	const normalize = (str) => {
+		const obj = decodeVendorConsentData(str);
+		obj.lastUpdated = now;
+		return encodeVendorConsentData(obj);
+	};
+	return normalize(str1) === normalize(str2);
+};
 
 const waitConsent = (fn) => consent ? fn() : waiters.push(fn);
 
@@ -71,11 +96,13 @@ class Relevant
 		};
 		const fullList = mergedWith(mergedWith(globalVendorList, Relevant.VENDOR_LIST), Relevant.config.customVendors || {});
 		(fullList.vendors || []).forEach((vendor) => {
-			if (vendor.onConsent) {
-				if(!onConsentListeners[vendor.id]) {
-					onConsentListeners[vendor.id] = vendor.onConsent;
+			for (const key of Object.keys(vendorListeners)) {
+				if (vendor[key]) {
+					if (!vendorListeners[key][vendor.id]) {
+						vendorListeners[key][vendor.id] = vendor[key];
+					}
+					delete vendor[key];
 				}
-				delete vendor.onConsent;
 			}
 		});
 		return fullList;
@@ -140,12 +167,39 @@ class Relevant
 		});
 	}
 
+	static injectCxense() {
+		const cX = (window.cX = window.cX || {});
+		(cX.callQueue = cX.callQueue || []).push(['requireConsent']);
+		cX.callQueue.push(['invoke', () => {
+			const consObj = {};
+			for (const cxName of Object.keys(CXENSE_PURPOSE_MAPPING)) {
+				consObj[cxName] = false;
+			}
+			cX.setConsent(consObj); // start by giving no consent
+		}]);
+	}
+
+	static syncCxenseConsent() {
+		if (!Relevant.config.syncCxenseConsent) {
+			return;
+		}
+		log.debug("Syncing consent to Cxense");
+		const cX = window.cX, consObj = {};
+		const hasConsent = allVendorConsents.vendorConsents[CXENSE_VENDOR_ID];
+		const { purposeConsents = {} } = allVendorConsents;
+		for (const [cxName, purposeIds] of Object.entries(CXENSE_PURPOSE_MAPPING)) {
+			consObj[cxName] = hasConsent && !(purposeIds).find(pId => !purposeConsents[pId]);
+		}
+		cX.callQueue.push(['invoke', () => {
+			cX.setConsent(consObj, { runCallQueue: hasConsent });
+		}]);
+	}
+
 	static init() {
 		const localConfig = window.RELEVANT_CMP_CONFIG || {};
 		const config = Object.assign({}, DEFAULT_CONFIG, localConfig);
 		config.cmpConfig = Object.assign({}, DEFAULT_CONFIG.cmpConfig, localConfig.cmpConfig || {});
 		Relevant.config = config;
-		onConsentListeners = config.onConsentListeners || {};
 
 		window.__cmp = { config: config.cmpConfig };
 
@@ -158,6 +212,9 @@ class Relevant
 		}
 		if (config.deferDfpLoading) {
 			Relevant.injectDfpTags();
+		}
+		if (config.syncCxenseConsent) {
+			Relevant.injectCxense();
 		}
 	}
 
@@ -212,10 +269,12 @@ class Relevant
 
 	/** Map consent from Ensighten cookies and save it */
 	static transferConsentFromEnsighten(mapping) {
-		const { store } = Relevant.cmpObj;
+		const { cmpObj } = Relevant;
+		const { store } = cmpObj;
 		if (!mapping) {
 			return;
 		}
+		const consentStr = cmpObj.generateConsentString();
 		const enConsents = {};
 		document.cookie.split(';').forEach((cookieStr) => {
 			const parts = cookieStr.split('=');
@@ -245,12 +304,27 @@ class Relevant
 			store.selectVendor(vendor.id, hasConsent);
 		});
 		store.persist();
+		if (!consentStringEq(consentStr, Relevant.cmpObj.generateConsentString())) {
+			setTimeout(() => cmpObj.notify('onSubmit'));
+		}
+	}
+
+	static onSubmit() {
+		for (const cb of Object.values(vendorListeners.onSubmit)) {
+			try {
+				cb();
+			} catch (e) {
+				log.error(e.message);
+			}
+		}
 	}
 
 	static onCmpCreated(cmpObj)
 	{
 		Relevant.cmpObj = cmpObj;
 		const orgFn = window.__cmp;
+
+		orgFn('addEventListener', 'onSubmit', Relevant.onSubmit);
 
 		const commands = {
 			getVendorList: (parameter, callback) => orgFn('getVendorList', parameter, (result, success) => {
@@ -302,7 +376,7 @@ class Relevant
 	}
 
 	static notifyConsentListeners() {
-		for (const [vendorId, cb] of Object.entries(onConsentListeners)) {
+		for (const [vendorId, cb] of Object.entries(vendorListeners.onConsent)) {
 			const hasConsent = allVendorConsents.vendorConsents[vendorId];
 			try {
 				cb(hasConsent);
@@ -343,7 +417,16 @@ Relevant.VENDOR_LIST = {
 			policyUrl: 'https://www.improvedigital.com/privacy-policy/',
 			purposeIds: [ 1 ],
 			legIntPurposeIds: [ 2, 3, 4, 5 ],
-			featureIds: [ 1, 2 ]
+			featureIds: [ 1, 2 ],
+		},
+		{
+			id: (CXENSE_VENDOR_ID = Relevant.CUSTOM_VENDOR_START_ID + 2),
+			name: 'Cxense ASA',
+			policyUrl: 'https://www.cxense.com/about-us/privacy-policy/',
+			purposeIds: [ 1 ],
+			legIntPurposeIds: [ 2, 3, 4, 5 ],
+			featureIds: [ 1, 2 ],
+			onConsent: Relevant.syncCxenseConsent,
 		},
 	],
 };
