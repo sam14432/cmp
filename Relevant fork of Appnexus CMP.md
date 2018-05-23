@@ -74,7 +74,7 @@ RELEVANT_CMP_CONFIG = {
 </script>
 
 <!-- Example URL - use latest version of script -->
-<script src="//rawgit.com/sam14432/cmp/master/dist/cmp.complete.vendors.bundle.js"></script>
+<script src="//cdn.rawgit.com/sam14432/cmp/master/dist/cmp.complete.vendors.bundle.js"></script>
 
 <!--
 	Example on how to optionally record consent per user somehow.
@@ -137,7 +137,7 @@ RELEVANT_CMP_CONFIG = {
     hideUi: true,
 };
 </script>
-<script src="//rawgit.com/sam14432/cmp/master/dist/cmp.complete.vendors.bundle.js"></script>
+<script src="//cdn.rawgit.com/sam14432/cmp/master/dist/cmp.complete.vendors.bundle.js"></script>
 ```
 
 > **First time page load (when the Ensighten UI is shown)**
@@ -156,7 +156,7 @@ RELEVANT_CMP_CONFIG = {
     syncCxenseConsent: true,
 };
 </script>
-<script src="//rawgit.com/sam14432/cmp/master/dist/cmp.complete.vendors.bundle.js"></script>
+<script src="//cdn.rawgit.com/sam14432/cmp/master/dist/cmp.complete.vendors.bundle.js"></script>
 ```
 
 As Cxense and IAB are defining the purposes for the consents somewhat differently, the following mapping is used.

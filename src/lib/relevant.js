@@ -1,4 +1,9 @@
-import { encodeVendorConsentData, decodeVendorConsentData } from "./cookie/cookie";
+import {
+	encodeVendorConsentData,
+	decodeVendorConsentData,
+	readCookie,
+	writeCookie
+} from "./cookie/cookie";
 import { fetchGlobalVendorList, fetchPubVendorList } from "./vendor";
 import Promise from 'promise-polyfill';
 import log from './log';
@@ -6,6 +11,9 @@ import log from './log';
 const MAX_PURPOSE_ID = 5;
 
 let CXENSE_VENDOR_ID;
+
+const STRING_ENC_OFS = 64;
+const KNOWN_VENDORS_COOKIE = "rlv_vendors";
 
 const CXENSE_PURPOSE_MAPPING = {
 	pv: [1,2,5],
@@ -200,6 +208,10 @@ class Relevant
 		const config = Object.assign({}, DEFAULT_CONFIG, localConfig);
 		config.cmpConfig = Object.assign({}, DEFAULT_CONFIG.cmpConfig, localConfig.cmpConfig || {});
 		Relevant.config = config;
+		if (config.cmpConfig.storeConsentGlobally) {
+			log.error('Global consent currently not supported, falling back to local consent');
+			config.cmpConfig.storeConsentGlobally = false;
+		}
 
 		window.__cmp = { config: config.cmpConfig };
 
@@ -317,12 +329,68 @@ class Relevant
 				log.error(e.message);
 			}
 		}
+		const { vendors } = Relevant.cmpObj.store.vendorList;
+		let maxGlobalId = 0;
+		const customIds = [];
+		const globalIds = new Set();
+		vendors.forEach((vendor) => {
+			if (vendor.id < Relevant.CUSTOM_VENDOR_START_ID) {
+				maxGlobalId = Math.max(vendor.id, maxGlobalId);
+				globalIds.add(vendor.id);
+			} else {
+				customIds.push(vendor.id);
+			}
+		});
+		const slots = Math.floor(maxGlobalId / 6) + 1;
+		let str = "";
+		for (let i = 0; i < slots; i++) {
+			let num = 0;
+			for (let j = 0; j < 6; j++) {
+				num += (globalIds.has(i*6 + j) ? 1 : 0) << j;
+			}
+			str += String.fromCharCode(STRING_ENC_OFS + num);
+		}
+		writeCookie(KNOWN_VENDORS_COOKIE, JSON.stringify({ global: str, custom: customIds}), 33696000, '/');
+	}
+
+	static initNewVendors() {
+		const { store } = Relevant.cmpObj;
+		const { vendors } = store.vendorList;
+		const knownCookie = readCookie(KNOWN_VENDORS_COOKIE);
+		if (!knownCookie) {
+			return;
+		}
+		const known = new Set();
+		try {
+			const obj = JSON.parse(knownCookie);
+			const str = (obj.global || "");
+			for (let i = 0; i < str.length; i++) {
+				const num = str.charCodeAt(i);
+				for (let j = 0; j < 6; j++) {
+					if (num & (1 << j)) {
+						known.add(i*6 + j);
+					}
+				}
+			}
+			(obj.custom || []).forEach((customId) => {
+				known.add(customId);
+			});
+			vendors.forEach((vendor) => {
+				if (!known.has(vendor.id)) {
+					store.selectVendor(vendor.id, true);
+				}
+			});
+		} catch (e) {
+			console.warn(`Corrupt cookie: ${KNOWN_VENDORS_COOKIE}`);
+		}
 	}
 
 	static onCmpCreated(cmpObj)
 	{
 		Relevant.cmpObj = cmpObj;
 		const orgFn = window.__cmp;
+
+		Relevant.initNewVendors();
 
 		orgFn('addEventListener', 'onSubmit', Relevant.onSubmit);
 
@@ -390,7 +458,7 @@ class Relevant
 Relevant.CUSTOM_VENDOR_START_ID = 5000;
 
 Relevant.VENDOR_LIST = {
-	vendorListVersion: 2,
+	vendorListVersion: 3,
 	vendors: [
 		{
 			id: Relevant.CUSTOM_VENDOR_START_ID + 0,
