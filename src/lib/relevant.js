@@ -461,7 +461,7 @@ class Relevant
 Relevant.CUSTOM_VENDOR_START_ID = 5000;
 
 Relevant.VENDOR_LIST = {
-	vendorListVersion: 3,
+	vendorListVersion: 4,
 	vendors: [
 		{
 			id: Relevant.CUSTOM_VENDOR_START_ID + 0,
@@ -481,14 +481,6 @@ Relevant.VENDOR_LIST = {
 					}
 				});
 			},
-		},
-		{
-			id: Relevant.CUSTOM_VENDOR_START_ID + 1,
-			name: 'Improve Digital B.V.',
-			policyUrl: 'https://www.improvedigital.com/privacy-policy/',
-			purposeIds: [ 1 ],
-			legIntPurposeIds: [ 2, 3, 4, 5 ],
-			featureIds: [ 1, 2 ],
 		},
 		{
 			id: (CXENSE_VENDOR_ID = Relevant.CUSTOM_VENDOR_START_ID + 2),
