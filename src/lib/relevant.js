@@ -56,6 +56,9 @@ const vendorListeners = {
 
 const consentStringEq = (str1, str2) => {
 	const now = new Date();
+	if (!str1 || !str2) {
+		return !str1 === !str2;
+	}
 	const normalize = (str) => {
 		const obj = decodeVendorConsentData(str);
 		obj.lastUpdated = now;

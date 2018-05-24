@@ -10,7 +10,7 @@ import config from './config';
 import Relevant from './relevant';
 
 const CMP_VERSION = 1;
-const CMP_ID = 1;
+const CMP_ID = 74;
 const COOKIE_VERSION = 1;
 
 export function init(configUpdates) {
