@@ -5,7 +5,7 @@ This fork contains some custom functionality for supporting "non IAB vendors" + 
 ### Sample usage with explanations
 
 ```html
-<!-- Place in <head> BEFORE including smart.js -->
+<!-- Place in <head> BEFORE including adserver js -->
 <script>
 RELEVANT_CMP_CONFIG = {
 	// "Own" vendors that should be added to the consent-list, use IDs >= 6000
@@ -41,9 +41,6 @@ RELEVANT_CMP_CONFIG = {
 	// true => don't show a "manage your settings" bottom-bar after accepting consent
 	hideBottomBar: true, 
 
-	// makes sure tags are 'async' and render() is postponed until after consent
-	injectInSmartTags: true,
-	
 	// set to undefined to NOT try to fetch '/.well-known/pubvendors.json'
 	pubVendorList: undefined,
 
