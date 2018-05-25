@@ -39,7 +39,7 @@ export default class Intro extends Component {
 					<LocalLabel localizeKey='description'>In order to run a successful website, we and certain third parties are setting cookies and accessing and storing information on your device for various purposes. Various third parties are also collecting data to show you personalized content and ads. Some third parties require your consent to collect data to serve you personalized content and ads.</LocalLabel>
 				</div>
 				<div class={style.options}>
-					{Relevant.config.manageButtonStyle === 'default' &&
+					{Relevant.config.manageButtonStyle === 'full' &&
 						<Button
 							class={style.rejectAll}
 							invert={true}
@@ -47,6 +47,13 @@ export default class Intro extends Component {
 						>
 							<LocalLabel localizeKey='showPurposes'>Manage your choices</LocalLabel>
 						</Button>
+					}
+					{Relevant.config.manageButtonStyle === 'default' &&
+						<div class={style.manageLinkStyle}>
+							<a onClick={onShowPurposes}>
+								<LocalLabel localizeKey='moreInfo'>More info</LocalLabel>
+							</a>
+						</div>
 					}
 					<Button
 						class={style.acceptAll}

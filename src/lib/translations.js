@@ -140,7 +140,8 @@ export default {
 			description: 'Sivustomme käyttää evästeitä palvelun toimittamiseksi, sivustoliikenteen mittaamiseen sekä kohdennettuun mainontaan. Painamalla hyväksy evästeet autat meitä ylläpitämään palveluamme.',
 			acceptAll: 'Hyväksy kaikki evästeet',
 			rejectAll: '',
-			showPurposes: 'Asetukset'
+			showPurposes: 'Asetukset',
+			moreInfo: 'lisätietoja',
 		},
 		details: {
 			title: 'Tietosuoja-asetukset',
