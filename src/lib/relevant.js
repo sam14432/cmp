@@ -12,7 +12,7 @@ const MAX_PURPOSE_ID = 5;
 
 let CXENSE_VENDOR_ID;
 
-const STRING_ENC_OFS = 64;
+const STRING_ENC_OFS = 63;
 const KNOWN_VENDORS_COOKIE = "rlv_vendors";
 
 const CXENSE_PURPOSE_MAPPING = {
@@ -223,7 +223,7 @@ class Relevant
 		};
 
 		if (config.injectInSmartTags) {
-			Relevant.injectSmartTags();
+			//Relevant.injectSmartTags(); //not needed after latest smart.js update
 		}
 		if (config.deferDfpLoading) {
 			Relevant.injectDfpTags();
@@ -368,7 +368,7 @@ class Relevant
 			const obj = JSON.parse(knownCookie);
 			const str = (obj.global || "");
 			for (let i = 0; i < str.length; i++) {
-				const num = str.charCodeAt(i);
+				const num = str.charCodeAt(i) - STRING_ENC_OFS;
 				for (let j = 0; j < 6; j++) {
 					if (num & (1 << j)) {
 						known.add(i*6 + j);
