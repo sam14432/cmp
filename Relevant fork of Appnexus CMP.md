@@ -174,8 +174,9 @@ At the time of writing this Google is not part of IAB's framework but is added a
 To enable/disable ads personalization based upon user consent you can use settings like below:
 
 ```js
+<!-- Place in <head> BEFORE including any adserver .js -->
+<script>
 RELEVANT_CMP_CONFIG = {
-    ...    
     /**
     * Will call googletag.pubads().setRequestNonPersonalizedAds([0 or 1]),
     * after loading consent settings
@@ -189,9 +190,10 @@ RELEVANT_CMP_CONFIG = {
     * and they are requested before consent has been loaded. See:
     * https://support.google.com/dfp_premium/answer/7678538
     */
-    deferDfpLoading: false,
-    ...
-}; 
+    deferDfpLoading: false,    
+};
+</script>
+<script src="//cdn.rawgit.com/sam14432/cmp/master/dist/cmp.complete.vendors.bundle.js"></script>
 ```
 
 ### Global consent
