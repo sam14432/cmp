@@ -141,7 +141,7 @@ export default {
 			acceptAll: 'Hyväksy kaikki evästeet',
 			rejectAll: '',
 			showPurposes: 'Asetukset',
-			moreInfo: 'lisätietoja',
+			moreInfo: 'Lisätietoja',
 		},
 		details: {
 			title: 'Tietosuoja-asetukset',
