@@ -35,7 +35,7 @@ RELEVANT_CMP_CONFIG = {
 	// true => use vendor-list included in cmp.complete.vendors.bundle.js
 	useBuiltInVendorList: true,
 	
-	// 'hidden' => hide "manage choices" option
+	// 'hidden' => hide "manage choices" option, 'full' => big manage choices button
 	manageButtonStyle: 'default',
 
 	// true => don't show a "manage your settings" bottom-bar after accepting consent
