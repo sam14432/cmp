@@ -143,9 +143,9 @@ RELEVANT_CMP_CONFIG = {
 
 ### Using own/custom way to signal consent
 
-There might be situations where you have obtained consent for a number of of vendors or purposes in a customized way (for example via an own UI) . In this case it's possible to store this information in the CMP and bypass the normal UI.
+There might be situations where you have obtained consent/non-consent for a number of of vendors and/or purposes in a customized way (for example via an own UI) . In this case it's possible to store this information in the CMP and bypass the normal UI.
 
-You can do that by implement a function **customConsentFn(vendorList, callback)**. This function is expected to call the **callback** function with an object on this format:
+You can do that by implementing a function **customConsentFn(vendorList, callback)**. This function is expected to call the **callback** function with an object on this format (or **undefined**/**null** which has no effect):
 
 ```javascript
 {
@@ -195,9 +195,9 @@ RELEVANT_CMP_CONFIG = {
 </script>
 ```
 
- The following configuration **1)** sets consent for one vendor **2)** non-consent for another **3)** consent for one purpose **4)** keeps all other consent settings intact.
+Use objects instead of arrays when you only want to change *some* of the consent settings. The following configuration **1)** sets consent for one vendor **2)** non-consent for another **3)** consent for one purpose **4)** keeps all other consent settings intact.
 
-```
+```javascript
 <script>
 RELEVANT_CMP_CONFIG = {
 	...
