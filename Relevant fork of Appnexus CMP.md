@@ -167,11 +167,51 @@ As Cxense and IAB are defining the purposes for the consents somewhat differentl
 
 This means for example that page view events "pv" is only sent if the user have given consent to IAB purposes 1, 2, *and* 5 in the CMP.
 
-### Set Google DFP ads personalization based upon user consent
+### Show Google DFP ads based upon user consent
 
-At the time of writing this Google is not part of IAB's framework but is added as custom vendor with id 5000 (see an explanation of "custom vendors" later in this document). There is basic functionality to set ads personalization and defer loading of ads as described [here](https://support.google.com/dfp_premium/answer/7678538).
+At the time of writing (**2018-05-28**) Google is not *yet* part of IAB's framework. Instead Google is added as a custom vendor with id 5000 (see an explanation of "custom vendors" later in this document).
 
-To enable/disable ads personalization based upon user consent you can use settings like below:
+However *this will very soon change*, as Google is implementing support for the IAB framework:
+
+https://support.google.com/dfp_premium/answer/9031024#iabframework
+
+But to use this custom solution to *avoid* loading DFP ads when there is no consent for that (not consent to Google + or IAB purposes 1+3), and to avoid load personalized ads (when IAB purpose 2 is missing), you can use a tag like below that follows the procedures described here:
+
+https://support.google.com/dfp_premium/answer/7678538
+
+```html
+<!-- Place in <head> BEFORE including any adserver .js -->
+<script src="//cdn.rawgit.com/sam14432/cmp/master/dist/cmp.complete.vendors.bundle.js"></script>
+<script>
+googletag = window.googletag || {};
+(googletag.cmd = googletag.cmd || []).push(function() {
+	var pubads = googletag.pubads();
+    
+	// Don't request any ads until we know if there is consent    
+	pubads.disableInitialLoad();
+	__cmp('relevant_getVendorConsents', null, function(consents) {
+		
+        // Google is currently custom vendor 5000        
+		var hasGoogleConsent = consents.vendorConsents[5000];
+		
+        var purposes = consents.purposeConsents;
+		if(!hasGoogleConsent || !purposes[1] || !purposes[3]) {
+			// Don't show any ads without consent to Google + purposes:
+			// "Information storage and access" and "Ad selection, delivery, reporting"
+			return;
+		}
+	
+		// ONLY request ads if there is consent to purpose "Personalisation"		
+		pubads.setRequestNonPersonalizedAds(purposes[2] ? 0 : 1);
+		pubads.refresh(); // finally, request ads
+	});
+});
+</script>
+```
+
+The same procedure can also be triggered by enabling the config settings **initDfpPersonalization** and **deferDfpLoading**. See below.
+
+**NOTICE:** Also remember to check your own implementation, as **googletag.pubads().refresh()** calls (see above) might already be made, causing ad-requests to be triggered without consent.
 
 ```js
 <!-- Place in <head> BEFORE including any adserver .js -->
@@ -179,13 +219,13 @@ To enable/disable ads personalization based upon user consent you can use settin
 RELEVANT_CMP_CONFIG = {
     /**
     * Will call googletag.pubads().setRequestNonPersonalizedAds([0 or 1]),
-    * after loading consent settings
+    * after loading consent settings.
     */
     initDfpPersonalization: true,
 	
     /**
     * If true, will call disableInitialLoad() on initialization
-    * and refresh() after loading consent.
+    * and refresh() after loading consent - if the there is suffient consent.
     * WARNING: will prevent ads to be shown if enableSyncRendering() is used 
     * and they are requested before consent has been loaded. See:
     * https://support.google.com/dfp_premium/answer/7678538

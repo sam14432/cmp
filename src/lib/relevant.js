@@ -450,7 +450,7 @@ class Relevant
 		for (const [vendorId, cb] of Object.entries(vendorListeners.onConsent)) {
 			const hasConsent = allVendorConsents.vendorConsents[vendorId];
 			try {
-				cb(hasConsent);
+				cb(hasConsent, allVendorConsents.purposeConsents);
 			} catch (e) {
 				log.error(e.message);
 			}
@@ -470,14 +470,16 @@ Relevant.VENDOR_LIST = {
 			purposeIds: [ 1 ],
 			legIntPurposeIds: [ 2, 3, 4, 5 ],
 			featureIds: [ 1, 2 ],
-			onConsent: (hasConsent) => {
+			onConsent: (hasConsent, purposes) => {
 				googleQueue((gtag) => {
 					const pubads = gtag.pubads();
 					if (Relevant.config.initDfpPersonalization) {
-						pubads.setRequestNonPersonalizedAds(hasConsent ? 0 : 1);
+						pubads.setRequestNonPersonalizedAds(hasConsent && purposes[2] ? 0 : 1);
 					}
 					if (Relevant.config.deferDfpLoading) {
-						pubads.refresh();
+						if (hasConsent && purposes[1] && purposes[3]) {
+							pubads.refresh();
+						}
 					}
 				});
 			},
