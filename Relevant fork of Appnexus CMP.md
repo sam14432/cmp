@@ -143,33 +143,33 @@ RELEVANT_CMP_CONFIG = {
 
 ### Using own/custom way to signal consent
 
-There might be situations where you have obtained consent for a number of of vendors or purposes in a customized way (for example via an own UI) . In this case it's possible to store this information in the CMP and bypass the normal UI. You can do that by implement a function **customConsentFn(vendorList)**.
+There might be situations where you have obtained consent for a number of of vendors or purposes in a customized way (for example via an own UI) . In this case it's possible to store this information in the CMP and bypass the normal UI.
 
-**customConsentFn(vendorList)** is expected to *return* an object with this format:
+You can do that by implement a function **customConsentFn(vendorList, callback)**. This function is expected to call the **callback** function with an object on this format:
 
 ```javascript
 {
-    vendors: [/** Array of vendor-ids there is consent for */],
-    purposes: [/** Array of purpose-ids there is consent for */],
-    features: [/** Array of feature-ids there is consent for (currently NOT IN USE)*/],
+    vendors: [/** Array of vendor-ids OR object of { id: boolean } */],
+    purposes: [/** Array of purpose-ids OR object of { id: boolean } */],
+    features: [/** Array of feature-ids OR object of { id: boolean } (NOT IN USE) */],
 }
 ```
 
 An example config with a **customConsentFn** that gives consent to all IDs would look like this:
 
-**WARNING:** *This is an example for documentation purpose-only, using such "accept all" policy is not compatible with GDPR or the IAB framework's policy.*
+**WARNING:** *This is an example for documentation-purpose only, using such "accept all" policy is not compatible with GDPR or the IAB framework's usage policies.*
 
 ```html
 <script>
 RELEVANT_CMP_CONFIG = {
 	...
 	hideUi: true,
-	customConsentFn: function(vendorList) {
-		return {
+	customConsentFn: function(vendorList, callback) {
+		callback({
 			vendors: vendorList.vendors.map(function(v) { return v.id; }),
 			purposes: vendorList.purposes.map(function(p) { return p.id; }),
 			features: vendorList.features.map(function(f) { return f.id; }),
-		};
+		});
 	},
 	...
 };
@@ -183,20 +183,40 @@ Similarly, a configuration that would give consent to nothing would look like th
 RELEVANT_CMP_CONFIG = {
 	...
 	hideUi: true,
-	customConsentFn: function(vendorList) {
-    	/** Null or an empty object could alternatively be returned with same effect */
-    	return { 
+	customConsentFn: function(vendorList, callback) {
+    	callback({ 
 			vendors: [],
 			purposes: [],
 			features: [],
-		};
+		});
 	},
 	...
 };
 </script>
 ```
 
- 
+ The following configuration **1)** sets consent for one vendor **2)** non-consent for another **3)** consent for one purpose **4)** keeps all other consent settings intact.
+
+```
+<script>
+RELEVANT_CMP_CONFIG = {
+	...
+	hideUi: true,
+	customConsentFn: function(vendorList, callback) {
+		callback({ 
+			vendors: {
+				8: true,
+				12: false,
+			},
+			purposes: {
+				3: true,
+			},
+		});
+	},
+	...
+};
+</script>
+```
 
 ### Configuration with Cxense
 

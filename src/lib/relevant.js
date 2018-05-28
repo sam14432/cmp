@@ -330,22 +330,35 @@ class Relevant
 		});
 	}
 
-	static transferCustomConsent() {
-		const { customConsentFn } = Relevant.config;
+	static transferCustomConsent(customConsentFn, cb) {
 		if (!customConsentFn) {
-			return;
+			return cb();
 		}
-		updateStore((store) => {
-			const consentRes = customConsentFn(store.vendorList) || {};
-			const vendorConsents = {};
-			(consentRes.vendors || []).forEach((vendorId) => {
-				vendorConsents[vendorId] = true;
-			});
-			store.vendorList.purposes.forEach((purpose) => {
-				store.selectPurpose(purpose.id, (consentRes.purposes || []).indexOf(purpose.id) >= 0);
-			});
-			store.vendorList.vendors.forEach((vendor) => {
-				store.selectVendor(vendor.id, !!vendorConsents[vendor.id]);
+		customConsentFn(Relevant.cmpObj.store.vendorList, (consentRes) => {
+			consentRes = consentRes || {};
+			updateStore((store) => {
+				const vendorConsents = {};
+				if (consentRes.vendors instanceof Array) {
+					consentRes.vendors.forEach((vendorId) => {
+						vendorConsents[vendorId] = true;
+					});
+					store.vendorList.vendors.forEach((vendor) => {
+						store.selectVendor(vendor.id, !!vendorConsents[vendor.id]);
+					});
+				} else {
+					for (const [vendorId, isSelected] of Object.entries(consentRes.vendors || {})) {
+						store.selectVendor(parseInt(vendorId), !!isSelected);
+					}
+				}
+				if (consentRes.purposes instanceof Array) {
+					store.vendorList.purposes.forEach((purpose) => {
+						store.selectPurpose(purpose.id, (consentRes.purposes || []).indexOf(purpose.id) >= 0);
+					});
+				} else {
+					for (const [purposeId, isSelected] of Object.entries(consentRes.purposes || {})) {
+						store.selectPurpose(parseInt(purposeId), !!isSelected);
+					}
+				}
 			});
 		});
 	}
@@ -459,16 +472,17 @@ class Relevant
 		relevantCmp.isRelevantCmp = true;
 
 		Relevant.transferConsentFromEnsighten(Relevant.config.ensightenMapping);
-		Relevant.transferCustomConsent();
-		window.__cmp = relevantCmp;
-		relevantCmp('getConsentData', null, (consentRes) => {
-			relevantCmp('relevant_getVendorConsents', null, (vendorConsents) => {
-				allVendorConsents = vendorConsents;
-				consent = consentRes;
-				Relevant.notifyConsentListeners();
-				log.debug(`Relevant loading completed in ${Date.now() - START_TIME} ms`);
-				waiters.forEach(fn => fn(true));
-				waiters = null;
+		Relevant.transferCustomConsent(Relevant.config.customConsentFn, () => {
+			window.__cmp = relevantCmp;
+			relevantCmp('getConsentData', null, (consentRes) => {
+				relevantCmp('relevant_getVendorConsents', null, (vendorConsents) => {
+					allVendorConsents = vendorConsents;
+					consent = consentRes;
+					Relevant.notifyConsentListeners();
+					log.debug(`Relevant loading completed in ${Date.now() - START_TIME} ms`);
+					waiters.forEach(fn => fn(true));
+					waiters = null;
+				});
 			});
 		});
 	}
