@@ -2,6 +2,8 @@
 
 This fork contains some custom functionality for supporting "non IAB vendors" + custom UI behavior. We'll keep it synced with the official/upstream project on regular basis.
 
+[TOC]
+
 ### Sample usage with explanations
 
 ```html
@@ -147,7 +149,7 @@ There might be situations where you have obtained consent for a number of of ven
 
 **customConsentFn(vendorList)** is expected to *return* an object with this format:
 
-```json
+```javascript
 {
     vendors: [/** Array of vendor-ids there is consent for */],
     purposes: [/** Array of purpose-ids there is consent for */],
