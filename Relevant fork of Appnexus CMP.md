@@ -2,8 +2,6 @@
 
 This fork contains some custom functionality for supporting "non IAB vendors" + custom UI behavior. We'll keep it synced with the official/upstream project on regular basis.
 
-[TOC]
-
 ### Sample usage with explanations
 
 ```html
@@ -186,7 +184,7 @@ RELEVANT_CMP_CONFIG = {
 	...
 	hideUi: true,
 	customConsentFn: function(vendorList) {
-		/** Null or an empty object could alternatively be returned with same effect */
+    	/** Null or an empty object could alternatively be returned with same effect */
     	return { 
 			vendors: [],
 			purposes: [],
