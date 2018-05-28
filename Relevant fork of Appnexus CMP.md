@@ -209,6 +209,8 @@ googletag = window.googletag || {};
 </script>
 ```
 
+#### Alternative solution
+
 The same procedure can also be triggered by enabling the config settings **initDfpPersonalization** and **deferDfpLoading**. See below.
 
 **NOTICE:** Also remember to check your own implementation, as **googletag.pubads().refresh()** calls (see above) might already be made, causing ad-requests to be triggered without consent.
