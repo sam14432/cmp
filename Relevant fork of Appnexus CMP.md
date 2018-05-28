@@ -267,17 +267,17 @@ googletag = window.googletag || {};
 	// Don't request any ads until we know if there is consent    
 	pubads.disableInitialLoad();
 	__cmp('relevant_getVendorConsents', null, function(consents) {
-		
-        // Google is currently custom vendor 5000        
+
+		// Google is currently custom vendor 5000        
 		var hasGoogleConsent = consents.vendorConsents[5000];
-		
-        var purposes = consents.purposeConsents;
+
+		var purposes = consents.purposeConsents;
 		if(!hasGoogleConsent || !purposes[1] || !purposes[3]) {
 			// Don't show any ads without consent to Google + purposes:
 			// "Information storage and access" and "Ad selection, delivery, reporting"
 			return;
 		}
-	
+
 		// ONLY request ads if there is consent to purpose "Personalisation"		
 		pubads.setRequestNonPersonalizedAds(purposes[2] ? 0 : 1);
 		pubads.refresh(); // finally, request ads
