@@ -88,6 +88,16 @@ const googleQueue = (fn) => {
 	});
 }
 
+const updateStore = (fn) => {
+	const { cmpObj } = Relevant;
+	const consentStr = cmpObj.generateConsentString();
+	fn(cmpObj.store);
+	cmpObj.store.persist();
+	if (!consentStringEq(consentStr, Relevant.cmpObj.generateConsentString())) {
+		setTimeout(() => cmpObj.notify('onSubmit'));
+	}
+};
+
 class Relevant
 {
 	static mergeLocalization(locMap) {
@@ -223,7 +233,7 @@ class Relevant
 		};
 
 		if (config.injectInSmartTags) {
-			//Relevant.injectSmartTags(); //not needed after latest smart.js update
+			Relevant.injectSmartTags(); // not needed after latest smart.js update
 		}
 		if (config.deferDfpLoading) {
 			Relevant.injectDfpTags();
@@ -284,12 +294,10 @@ class Relevant
 
 	/** Map consent from Ensighten cookies and save it */
 	static transferConsentFromEnsighten(mapping) {
-		const { cmpObj } = Relevant;
-		const { store } = cmpObj;
+		const { store } = Relevant.cmpObj;
 		if (!mapping) {
 			return;
 		}
-		const consentStr = cmpObj.generateConsentString();
 		const enConsents = {};
 		document.cookie.split(';').forEach((cookieStr) => {
 			const parts = cookieStr.split('=');
@@ -308,20 +316,38 @@ class Relevant
 				}
 			});
 		}
-		for (let purposeId = 1; purposeId <= MAX_PURPOSE_ID; purposeId++) {
-			store.selectPurpose(purposeId, !!purposeConsents[purposeId]);
-		}
-		store.vendorList.vendors.forEach((vendor) => {
-			let hasConsent = !(vendor.purposeIds || []).find(pId => !purposeConsents[pId]);
-			if (hasConsent && Relevant.config.legitimateInterest === 'hard' && (vendor.legIntPurposeIds || []).find(pId => !purposeConsents[pId])) {
-				hasConsent = false;
-			}
-			store.selectVendor(vendor.id, hasConsent);
+		updateStore((store) => {
+			store.vendorList.purposes.forEach((purpose) => {
+				store.selectPurpose(purpose.id, !!purposeConsents[purpose.id]);
+			});
+			store.vendorList.vendors.forEach((vendor) => {
+				let hasConsent = !(vendor.purposeIds || []).find(pId => !purposeConsents[pId]);
+				if (hasConsent && Relevant.config.legitimateInterest === 'hard' && (vendor.legIntPurposeIds || []).find(pId => !purposeConsents[pId])) {
+					hasConsent = false;
+				}
+				store.selectVendor(vendor.id, hasConsent);
+			});
 		});
-		store.persist();
-		if (!consentStringEq(consentStr, Relevant.cmpObj.generateConsentString())) {
-			setTimeout(() => cmpObj.notify('onSubmit'));
+	}
+
+	static transferCustomConsent() {
+		const { customConsentFn } = Relevant.config;
+		if (!customConsentFn) {
+			return;
 		}
+		updateStore((store) => {
+			const consentRes = customConsentFn(store.vendorList) || {};
+			const vendorConsents = {};
+			(consentRes.vendors || []).forEach((vendorId) => {
+				vendorConsents[vendorId] = true;
+			});
+			store.vendorList.purposes.forEach((purpose) => {
+				store.selectPurpose(purpose.id, (consentRes.purposes || []).indexOf(purpose.id) >= 0);
+			});
+			store.vendorList.vendors.forEach((vendor) => {
+				store.selectVendor(vendor.id, !!vendorConsents[vendor.id]);
+			});
+		});
 	}
 
 	static onSubmit() {
@@ -433,6 +459,7 @@ class Relevant
 		relevantCmp.isRelevantCmp = true;
 
 		Relevant.transferConsentFromEnsighten(Relevant.config.ensightenMapping);
+		Relevant.transferCustomConsent();
 		window.__cmp = relevantCmp;
 		relevantCmp('getConsentData', null, (consentRes) => {
 			relevantCmp('relevant_getVendorConsents', null, (vendorConsents) => {

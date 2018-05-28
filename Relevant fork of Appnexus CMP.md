@@ -141,6 +141,63 @@ RELEVANT_CMP_CONFIG = {
 >
 > Currently this will result in no IAB consent at all. This is because the code will read the cookies created by Ensighten upon loading the page, *before* the user have the change to press the "ok" button.
 
+### Using own/custom way to signal consent
+
+There might be situations where you have obtained consent for a number of of vendors or purposes in a customized way (for example via an own UI) . In this case it's possible to store this information in the CMP and bypass the normal UI. You can do that by implement a function **customConsentFn(vendorList)**.
+
+**customConsentFn(vendorList)** is expected to *return* an object with this format:
+
+```json
+{
+    vendors: [/** Array of vendor-ids there is consent for */],
+    purposes: [/** Array of purpose-ids there is consent for */],
+    features: [/** Array of feature-ids there is consent for (currently NOT IN USE)*/],
+}
+```
+
+An example config with a **customConsentFn** that gives consent to all IDs would look like this:
+
+**WARNING:** *This is an example for documentation purpose-only, using such "accept all" policy is not compatible with GDPR or the IAB framework's policy.*
+
+```html
+<script>
+RELEVANT_CMP_CONFIG = {
+	...
+	hideUi: true,
+	customConsentFn: function(vendorList) {
+		return {
+			vendors: vendorList.vendors.map(function(v) { return v.id; }),
+			purposes: vendorList.purposes.map(function(p) { return p.id; }),
+			features: vendorList.features.map(function(f) { return f.id; }),
+		};
+	},
+	...
+};
+</script>
+```
+
+Similarly, a configuration that would give consent to nothing would look like this:
+
+```html
+<script>
+RELEVANT_CMP_CONFIG = {
+	...
+	hideUi: true,
+	customConsentFn: function(vendorList) {
+		/** Null or an empty object could alternatively be returned with same effect */
+    	return { 
+			vendors: [],
+			purposes: [],
+			features: [],
+		};
+	},
+	...
+};
+</script>
+```
+
+ 
+
 ### Configuration with Cxense
 
 Cxense is added as custom vendor 5002. It is possible to automate [Cxense's consent settings](https://wiki.cxense.com/display/cust/GDPR+Compliance+with+Cxense) by using **syncCxenseConsent: true** in the configuration. By enabling that setting "page view events", etc - are delayed until consent has been given to Cxense for the corresponding purposes. Below is an example tag showing how this can be done.
