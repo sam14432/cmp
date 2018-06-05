@@ -96,6 +96,8 @@ You can use the lightweight "stub" loader in order to load the full CMP library 
 ```html
 <!-- Place in <head> BEFORE including adserver js -->
 <script src="//cdn.relevant-digital.com/cmp/stub.js"></script>
+
+<!-- Place anywhere below on page -->
 <script src="//cdn.relevant-digital.com/cmp/cmp.complete.vendors.bundle.js" async></script>
 ```
 
@@ -264,7 +266,7 @@ This means for example that page view events "pv" is only sent if the user have 
 
 ### Show Google DFP ads based upon user consent
 
-
+> **NOTICE:** This section depends upon the config setting **useCustomGoogle** that must be set to **true**. Without it 'Google' is not added as a custom vendor.
 
 At the time of writing (**2018-05-28**) Google is not *yet* part of IAB's framework. Instead Google is added as a custom vendor with id 5000 (see an explanation of "custom vendors" later in this document).
 
