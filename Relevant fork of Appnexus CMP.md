@@ -2,7 +2,14 @@
 
 This fork contains some custom functionality for supporting "non IAB vendors" + custom UI behavior. We'll keep it synced with the official/upstream project whenever we deem the official changes appropriate.
 
-### Sample usage with explanations
+### Minimal working integration example
+
+```html
+<!-- Place in <head> BEFORE including adserver js -->
+<script src="//cdn.relevant-digital.com/cmp/cmp.complete.vendors.bundle.js"></script>
+```
+
+### Sample usage with configuration and explanations
 
 ```html
 <!-- Place in <head> BEFORE including adserver js -->
