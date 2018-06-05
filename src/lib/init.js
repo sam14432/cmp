@@ -48,8 +48,10 @@ export function init(configUpdates) {
 			// Replace the __cmp with our implementation
 			const cmp = new Cmp(store);
 
+			cmp.isRelevantCmp = true;
+
 			// Expose `processCommand` as the CMP implementation
-			window[CMP_GLOBAL_NAME] = cmp.processCommand;
+			//window[CMP_GLOBAL_NAME] = cmp.processCommand;
 
 			// Notify listeners that the CMP is loaded
 			log.debug(`Successfully loaded CMP version: ${pack.version} in ${Date.now() - startTime}ms`);
@@ -62,7 +64,7 @@ export function init(configUpdates) {
 
 			// Execute any previously queued command
 			cmp.commandQueue = commandQueue;
-			cmp.processCommandQueue();
+			//cmp.processCommandQueue();
 
 			// Request lists
 			return Promise.all([

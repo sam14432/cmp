@@ -7,10 +7,14 @@ import {
 import { fetchGlobalVendorList, fetchPubVendorList } from "./vendor";
 import Promise from 'promise-polyfill';
 import log from './log';
+import GlobalConfigObject from './config';
 
 const MAX_PURPOSE_ID = 5;
 
 let CXENSE_VENDOR_ID;
+let GOOGLE_VENDOR_ID;
+
+const NO_CUSTOM_GOOGLE = true;
 
 const STRING_ENC_OFS = 63;
 const KNOWN_VENDORS_COOKIE = "rlv_vendors";
@@ -45,6 +49,7 @@ const DEFAULT_CONFIG = {
 	syncCxenseConsent: false,
 	initDfpPersonalization: false,
 	deferDfpLoading: false,
+	useCustomGoogle: false,
 };
 
 let consent, allVendorConsents, waiters = [];
@@ -164,9 +169,6 @@ class Relevant
 	}
 
 	static injectSmartTags() {
-		if (window.sas) {
-			log.error('CMP must be loaded before smart.js and not using async');
-		}
 		const sas = (window.sas = window.sas || {});
 		inject(sas, 'call', (orgFn, wasWaiting, type, obj, ...rest) => {
 			obj = Object.assign({}, obj, {
@@ -217,6 +219,8 @@ class Relevant
 	}
 
 	static init() {
+		const hej = decodeVendorConsentData("BOO4EJ5OO4EJ5BKABAENAn-AAAF3KA6gACAAkABgA1gBuAKUAVABfgDCAMUAZABmgDQANMAbABzgDuAPAAeoA-AEMAIiARQBIwCTAJeATIBSwCnAKqAVoBXgCxgFmAWkAtgC3AFzALwAvoBgAGHAMUAywBmwDQANUAa4A2YBwAHMAOiAdQB4wD0APaAfAB8wD8AQQAg0BCAEKgIaAh0BEAEagI4AjsBIAEjgJMAk4BKQCVwEtATCAmgCbQE6AUAAocBRQFGAKQAUsApoBUwCsgFdALEAWcJxUXcRdyA");
+		console.info(hej);
 		const localConfig = window.RELEVANT_CMP_CONFIG || {};
 		const config = Object.assign({}, DEFAULT_CONFIG, localConfig);
 		config.cmpConfig = Object.assign({}, DEFAULT_CONFIG.cmpConfig, localConfig.cmpConfig || {});
@@ -226,20 +230,44 @@ class Relevant
 			config.cmpConfig.storeConsentGlobally = false;
 		}
 
-		window.__cmp = { config: config.cmpConfig };
+		if (!config.useCustomGoogle) {
+			Relevant.VENDOR_LIST.vendors = Relevant.VENDOR_LIST.vendors.filter(v => v.id !== GOOGLE_VENDOR_ID);
+			delete config.deferDfpLoading;
+			delete config.initDfpPersonalization;
+		}
+
+		if (!window.__cmp) {
+			window.__cmp = {config: config.cmpConfig};
+		}
+		GlobalConfigObject.update(config.cmpConfig);
 
 		Promise._immediateFn = (fn) => {
 			fn();
 		};
 
 		if (config.injectInSmartTags) {
-			Relevant.injectSmartTags(); // not needed after latest smart.js update
+			if (window.sas) {
+				log.error('CMP must be loaded before smart.js without using async for injectSmartTags to work');
+				config.injectInSmartTags = false;
+			} else {
+				Relevant.injectSmartTags(); // not needed after latest smart.js update
+			}
 		}
 		if (config.deferDfpLoading) {
-			Relevant.injectDfpTags();
+			if (window.googletag) {
+				log.error(`CMP must be loaded before 'googletag' is created without using async for deferDfpLoading to work`);
+				config.deferDfpLoading = false;
+			} else {
+				Relevant.injectDfpTags();
+			}
 		}
 		if (config.syncCxenseConsent) {
-			Relevant.injectCxense();
+			if (window.cX) {
+				log.error(`CMP must be loaded before 'cX' is created without using async for syncCxenseConsent to work`);
+				config.syncCxenseConsent = false;
+			} else {
+				Relevant.injectCxense();
+			}
 		}
 	}
 
@@ -430,7 +458,7 @@ class Relevant
 	static onCmpCreated(cmpObj)
 	{
 		Relevant.cmpObj = cmpObj;
-		const orgFn = window.__cmp;
+		const orgFn = cmpObj.processCommand;
 
 		Relevant.initNewVendors();
 
@@ -469,11 +497,12 @@ class Relevant
 					source.postMessage({__cmpReturn: {callId, command, returnValue}}, origin));
 			}
 		};
-		relevantCmp.isRelevantCmp = true;
 
 		Relevant.transferConsentFromEnsighten(Relevant.config.ensightenMapping);
 		Relevant.transferCustomConsent(Relevant.config.customConsentFn, () => {
+			cmpObj.processCommand = relevantCmp;
 			window.__cmp = relevantCmp;
+
 			relevantCmp('getConsentData', null, (consentRes) => {
 				relevantCmp('relevant_getVendorConsents', null, (vendorConsents) => {
 					allVendorConsents = vendorConsents;
@@ -505,7 +534,7 @@ Relevant.VENDOR_LIST = {
 	vendorListVersion: 4,
 	vendors: [
 		{
-			id: Relevant.CUSTOM_VENDOR_START_ID + 0,
+			id: (GOOGLE_VENDOR_ID = Relevant.CUSTOM_VENDOR_START_ID + 0),
 			name: 'Google LLC',
 			policyUrl: 'https://policies.google.com/privacy',
 			purposeIds: [ 1 ],

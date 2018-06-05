@@ -72,38 +72,42 @@ function addLocatorFrame() {
 	}
 }
 
-addLocatorFrame();
+if (!(window.__cmp || {}).isRelevantCmp) {
 
-// Add stub
-const commandQueue = [];
-const cmp = function (command, parameter, callback) {
-	commandQueue.push({
-		command,
-		parameter,
-		callback
-	});
-};
-cmp.commandQueue = commandQueue;
-cmp.receiveMessage = function (event) {
-	const data = event && event.data && event.data.__cmpCall;
-	if (data) {
-		const {callId, command, parameter} = data;
+	addLocatorFrame();
+
+	// Add stub
+	const commandQueue = [];
+	const cmp = function (command, parameter, callback) {
 		commandQueue.push({
-			callId,
 			command,
 			parameter,
-			event
+			callback
 		});
-	}
-};
+	};
+	cmp.commandQueue = commandQueue;
+	cmp.receiveMessage = function (event) {
+		const data = event && event.data && event.data.__cmpCall;
+		if (data) {
+			const {callId, command, parameter} = data;
+			commandQueue.push({
+				callId,
+				command,
+				parameter,
+				event
+			});
+		}
+	};
 
-window.__cmp = cmp;
+	cmp.isRelevantCmp = true;
 
-// Listen for postMessage events
-const listen = window.attachEvent || window.addEventListener;
-listen('message', event => {
-	window.__cmp.receiveMessage(event);
-}, false);
+	window.__cmp = cmp;
 
+	// Listen for postMessage events
+	const listen = window.attachEvent || window.addEventListener;
+	listen('message', event => {
+		window.__cmp.receiveMessage(event);
+	}, false);
+}
 // Initialize CMP and then check if we need to ask for consent
 init(configUpdates).then(Relevant.onCmpCreated).then(() => checkConsent(window.__cmp));

@@ -1,6 +1,6 @@
 # Relevant fork of Appnexus CMP
 
-This fork contains some custom functionality for supporting "non IAB vendors" + custom UI behavior. We'll keep it synced with the official/upstream project on regular basis.
+This fork contains some custom functionality for supporting "non IAB vendors" + custom UI behavior. We'll keep it synced with the official/upstream project whenever we deem the official changes appropriate.
 
 ### Sample usage with explanations
 
@@ -71,7 +71,7 @@ RELEVANT_CMP_CONFIG = {
 </script>
 
 <!-- Example URL - use latest version of script -->
-<script src="//cdn.rawgit.com/sam14432/cmp/master/dist/cmp.complete.vendors.bundle.js"></script>
+<script src="//cdn.relevant-digital.com/cmp/cmp.complete.vendors.bundle.js"></script>
 
 <!--
 	Example on how to optionally record consent per user somehow.
@@ -88,6 +88,24 @@ RELEVANT_CMP_CONFIG = {
 </script>
 
 ```
+
+### Faster page loads by using stub + async loading
+
+You can use the lightweight "stub" loader in order to load the full CMP library using the **async** attribute. Below is an example of a tag using this format (with default settings):
+
+```html
+<!-- Place in <head> BEFORE including adserver js -->
+<script src="//cdn.relevant-digital.com/cmp/stub.js"></script>
+<script src="//cdn.relevant-digital.com/cmp/cmp.complete.vendors.bundle.js" async></script>
+```
+
+In order to further improve the page load performance it is also acceptable to copy the content of  https://cdn.relevant-digital.com/cmp/stub.js and place it inside a script tag that *replaces* the external script reference to stub.js.
+
+**WARNING:*** Loading the library this way will inactivate the following config settings. *If you don't use any of these you can ignore this warning*.
+
+- **injectInSmartTags**
+- **deferDfpLoading**
+- **syncCxenseConsent**
 
 ### Configuration with Ensighten Privacy
 
@@ -246,6 +264,8 @@ This means for example that page view events "pv" is only sent if the user have 
 
 ### Show Google DFP ads based upon user consent
 
+
+
 At the time of writing (**2018-05-28**) Google is not *yet* part of IAB's framework. Instead Google is added as a custom vendor with id 5000 (see an explanation of "custom vendors" later in this document).
 
 However *this will very soon change*, as Google is implementing support for the IAB framework:
@@ -296,6 +316,8 @@ The same procedure can also be triggered by enabling the config settings **initD
 <!-- Place in <head> BEFORE including any adserver .js -->
 <script>
 RELEVANT_CMP_CONFIG = {
+    useCustomGoogle: true,	
+    
     /**
     * Will call googletag.pubads().setRequestNonPersonalizedAds([0 or 1]),
     * after loading consent settings.
@@ -312,7 +334,7 @@ RELEVANT_CMP_CONFIG = {
     deferDfpLoading: false,    
 };
 </script>
-<script src="//cdn.rawgit.com/sam14432/cmp/master/dist/cmp.complete.vendors.bundle.js"></script>
+<script src="//cdn.relevant-digital.com/cmp/cmp.complete.vendors.bundle.js"></script>
 ```
 
 ### Global consent
