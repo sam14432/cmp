@@ -1,3 +1,4 @@
+import 'whatwg-fetch';
 import {
 	encodeVendorConsentData,
 	decodeVendorConsentData,
@@ -9,12 +10,8 @@ import Promise from 'promise-polyfill';
 import log from './log';
 import GlobalConfigObject from './config';
 
-const MAX_PURPOSE_ID = 5;
-
 let CXENSE_VENDOR_ID;
 let GOOGLE_VENDOR_ID;
-
-const NO_CUSTOM_GOOGLE = true;
 
 const STRING_ENC_OFS = 63;
 const KNOWN_VENDORS_COOKIE = "rlv_vendors";
@@ -49,7 +46,7 @@ const DEFAULT_CONFIG = {
 	syncCxenseConsent: false,
 	initDfpPersonalization: false,
 	deferDfpLoading: false,
-	useCustomGoogle: false,
+	useCustomGoogle: true,
 };
 
 let consent, allVendorConsents, waiters = [];
@@ -144,6 +141,12 @@ class Relevant
 
 	static fetchPubVendorList() {
 		if ('pubVendorList' in Relevant.config) {
+			const { pubVendorList } = Relevant.config;
+			if (typeof pubVendorList === 'string') {
+				return fetch(pubVendorList)
+					.then(res => res.json())
+					.catch(() => {});
+			}
 			return Promise.resolve(Relevant.config.pubVendorList);
 		}
 		return fetchPubVendorList();

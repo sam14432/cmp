@@ -48,7 +48,11 @@ RELEVANT_CMP_CONFIG = {
 	// true => don't show a "manage your settings" bottom-bar after accepting consent
 	hideBottomBar: true, 
 
-	// set to undefined to NOT try to fetch '/.well-known/pubvendors.json'
+	/**
+    * Set to undefined to NOT use a publisher vendor list (default). 
+	* Or, set to an url (string) to fetch it
+	* Or, set to an object containing the publisher vendor list
+    */
 	pubVendorList: undefined,
 
 	/**
