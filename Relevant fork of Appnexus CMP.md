@@ -124,7 +124,7 @@ In order to further improve the page load performance it is also acceptable to c
 
 If you want to use the official unmodified version of Appnexus CMP and for some reason don't want to build it yourself, [then you can follow this guide](https://cdn.relevant-digital.com/appnexuscmp/docs/index.html#/quickstart).
 
-## Using own version of global vendor list
+### Using own version of global vendor list
 
 The global vendor list can be retrieved in three ways:
 
