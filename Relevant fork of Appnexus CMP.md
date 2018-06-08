@@ -49,10 +49,10 @@ RELEVANT_CMP_CONFIG = {
 	hideBottomBar: true, 
 
 	/**
-    * Set to undefined to NOT use a publisher vendor list (default). 
+	* Set to undefined to NOT use a publisher vendor list (default). 
 	* Or, set to an url (string) to fetch it
 	* Or, set to an object containing the publisher vendor list
-    */
+	*/
 	pubVendorList: undefined,
 
 	/**
@@ -119,6 +119,10 @@ In order to further improve the page load performance it is also acceptable to c
 - **injectInSmartTags**
 - **deferDfpLoading**
 - **syncCxenseConsent**
+
+### Unmodified Appnexus CMP build available on CDN
+
+If you want to use the official unmodified version of Appnexus CMP and for some reason don't want to build it yourself, [then you can follow this guide](https://cdn.relevant-digital.com/appnexuscmp/docs/index.html#/quickstart).
 
 ### Configuration with Ensighten Privacy
 
