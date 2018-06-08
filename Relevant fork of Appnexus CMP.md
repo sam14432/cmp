@@ -124,6 +124,20 @@ In order to further improve the page load performance it is also acceptable to c
 
 If you want to use the official unmodified version of Appnexus CMP and for some reason don't want to build it yourself, [then you can follow this guide](https://cdn.relevant-digital.com/appnexuscmp/docs/index.html#/quickstart).
 
+## Using own version of global vendor list
+
+The global vendor list can be retrieved in three ways:
+
+| Config settings                                              | Method of retrieval                             | Updated                            |
+| ------------------------------------------------------------ | ----------------------------------------------- | ---------------------------------- |
+| useBuiltInVendorList: true                                   | Use bundled list (default)                      | By Relevant when deemed necessary. |
+| useBuiltInVendorList: false                                  | https://vendorlist.consensu.org/vendorlist.json | By IAB, currently on daily basis.  |
+| useBuiltInVendorList: false,<br />cmpConfig: {<br />globalVendorListLocation: 'https://my-site.com/vendorlist.json'<br />}, |                                                 | By the publisher, at will.         |
+
+The advantage of using the last alternative (own version) is that the publisher controls whenever a new consent pupup window will be shown to the user.
+
+Another option is to use a *publisher vendor list* (see the **pubVendorList** config setting above) that will be used to filter out a subset of vendors from the global vendor list. This will only trigger a new consent UI whenever the publisher vendor list updates. However the *drawback* is that you *need to keep track of all buy side systems buying inventory on your site* (DSPs). Therefore it's in general not enough to just include vendors that you have contractual agreements with and/or are directly used on the site.
+
 ### Configuration with Ensighten Privacy
 
 If you use Ensighten Privacy you probably don't want to expose an additional UI. Instead it's possible to map the selected consent categories you've created in Ensighten to the 5 IAB *purposes* defined [here](https://github.com/InteractiveAdvertisingBureau/GDPR-Transparency-and-Consent-Framework/blob/master/Consent%20string%20and%20vendor%20list%20formats%20v1.1%20Final.md). This mapping is also used to filter out the IAB vendor IDs that consent will be given to.
