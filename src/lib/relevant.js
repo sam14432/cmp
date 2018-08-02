@@ -222,8 +222,6 @@ class Relevant
 	}
 
 	static init() {
-		const hej = decodeVendorConsentData("BOO4EJ5OO4EJ5BKABAENAn-AAAF3KA6gACAAkABgA1gBuAKUAVABfgDCAMUAZABmgDQANMAbABzgDuAPAAeoA-AEMAIiARQBIwCTAJeATIBSwCnAKqAVoBXgCxgFmAWkAtgC3AFzALwAvoBgAGHAMUAywBmwDQANUAa4A2YBwAHMAOiAdQB4wD0APaAfAB8wD8AQQAg0BCAEKgIaAh0BEAEagI4AjsBIAEjgJMAk4BKQCVwEtATCAmgCbQE6AUAAocBRQFGAKQAUsApoBUwCsgFdALEAWcJxUXcRdyA");
-		console.info(hej);
 		const localConfig = window.RELEVANT_CMP_CONFIG || {};
 		const config = Object.assign({}, DEFAULT_CONFIG, localConfig);
 		config.cmpConfig = Object.assign({}, DEFAULT_CONFIG.cmpConfig, localConfig.cmpConfig || {});
