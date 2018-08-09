@@ -10,7 +10,7 @@ import Promise from 'promise-polyfill';
 import log from './log';
 import GlobalConfigObject from './config';
 
-let CXENSE_VENDOR_ID;
+const CXENSE_VENDOR_ID = 412;
 let GOOGLE_VENDOR_ID;
 
 const STRING_ENC_OFS = 63;
@@ -196,6 +196,7 @@ class Relevant
 	static injectCxense() {
 		const cX = (window.cX = window.cX || {});
 		(cX.callQueue = cX.callQueue || []).push(['requireConsent']);
+		vendorListeners.onConsent[CXENSE_VENDOR_ID] = Relevant.syncCxenseConsent;
 		cX.callQueue.push(['invoke', () => {
 			const consObj = {};
 			for (const cxName of Object.keys(CXENSE_PURPOSE_MAPPING)) {
@@ -340,7 +341,7 @@ class Relevant
 		const purposeConsents = {};
 		for (const [enKey, settings] of Object.entries(mapping)) {
 			(settings.purposes || []).forEach((purposeId) => {
-				if (enConsents[enKey]) {
+				if (enConsents[enKey] || (!(enKey in enConsents) && enConsents.BANNER_VIEWED)) {
 					purposeConsents[purposeId] = true;
 				}
 			});
@@ -554,15 +555,6 @@ Relevant.VENDOR_LIST = {
 					}
 				});
 			},
-		},
-		{
-			id: (CXENSE_VENDOR_ID = Relevant.CUSTOM_VENDOR_START_ID + 2),
-			name: 'Cxense ASA',
-			policyUrl: 'https://www.cxense.com/about-us/privacy-policy/',
-			purposeIds: [ 1 ],
-			legIntPurposeIds: [ 2, 3, 4, 5 ],
-			featureIds: [ 1, 2 ],
-			onConsent: Relevant.syncCxenseConsent,
 		},
 	],
 };
